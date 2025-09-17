@@ -1,0 +1,97 @@
+{
+	"name": "@apeleghq/http-media-type-negotiator",
+	"version": "1.0.0",
+	"description": "RFC‑aware HTTP media type negotiator - parses and normalises Accept headers and media types (RFC 9110), supports q-value ranking, wildcard matching, and a permissive mode for real‑world headers.",
+	"type": "module",
+	"main": "dist/index.cjs",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.cts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.mjs"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		},
+		"./negotiateMediaType": {
+			"import": {
+				"types": "./dist/exports/negotiateMediaType.d.ts",
+				"default": "./dist/negotiateMediaType.mjs"
+			},
+			"require": {
+				"types": "./dist/exports/negotiateMediaType.d.cts",
+				"default": "./dist/negotiateMediaType.cjs"
+			}
+		},
+		"./negotiateMediaTypeFactory": {
+			"import": {
+				"types": "./dist/exports/negotiateMediaTypeFactory.d.ts",
+				"default": "./dist/negotiateMediaTypeFactory.mjs"
+			},
+			"require": {
+				"types": "./dist/exports/negotiateMediaTypeFactory.d.cts",
+				"default": "./dist/negotiateMediaTypeFactory.cjs"
+			}
+		},
+		"./parseAcceptHeader": {
+			"import": {
+				"types": "./dist/exports/parseAcceptHeader.d.ts",
+				"default": "./dist/parseAcceptHeader.mjs"
+			},
+			"require": {
+				"types": "./dist/exports/parseAcceptHeader.d.cts",
+				"default": "./dist/parseAcceptHeader.cjs"
+			}
+		},
+		"./parseMediaType": {
+			"import": {
+				"types": "./dist/exports/parseMediaType.d.ts",
+				"default": "./dist/parseMediaType.mjs"
+			},
+			"require": {
+				"types": "./dist/exports/parseMediaType.d.cts",
+				"default": "./dist/parseMediaType.cjs"
+			}
+		}
+	},
+	"devDependencies": {
+		"@eslint/eslintrc": "^3.3.1",
+		"@eslint/js": "^9.35.0",
+		"@types/node": "^24.5.0",
+		"@typescript-eslint/eslint-plugin": "^8.44.0",
+		"@typescript-eslint/parser": "^8.44.0",
+		"esbuild": "^0.25.9",
+		"eslint": "^9.35.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-prettier": "^5.4.4",
+		"globals": "^16.4.0",
+		"prettier": "^3.6.2",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.9.2"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ApelegHQ/ts-http-media-type-negotiator.git"
+	},
+	"files": [
+		"dist/**/*"
+	],
+	"scripts": {
+		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+		"lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+		"build": "tsc --emitDeclarationOnly --declarationMap --declaration && node --import ./loader.mjs esbuild.ts",
+		"test": "node --import ./loader.mjs --test test/index.test.ts",
+		"prepack": "npm run build",
+		"prepublishOnly": "npm test && npm run lint",
+		"preversion": "npm run lint",
+		"version": "npm run lint && git add -A src",
+		"postversion": "git push && git push --tags"
+	},
+	"author": "Apeleg Limited",
+	"license": "ISC",
+	"keywords": ["http", "content-negotiation", "accept-header", "media-type", "mime", "rfc9110", "parser", "negotiation", "qvalue" ,"content-type"]
+}
