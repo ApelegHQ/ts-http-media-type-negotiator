@@ -13,9 +13,10 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+import { $orignal, $subtype, $type } from './constants.js';
 import { type TMediaType } from './parseMediaType.js';
 
-type TNormalisedMediaType = TMediaType & { readonly original: TMediaType };
+type TNormalisedMediaType = TMediaType & { readonly [$orignal]: TMediaType };
 
 /**
  * Normalises a parsed media type into a canonical, case-normalised form and
@@ -68,19 +69,19 @@ const normaliseMediaType = (mediaType: TMediaType): TNormalisedMediaType => {
 		normalised,
 		Object.fromEntries([
 			[
-				'type',
+				$type,
 				{
-					get: () => mediaType.type.toLowerCase(),
+					get: () => mediaType[$type].toLowerCase(),
 				},
 			],
 			[
-				'subtype',
+				$subtype,
 				{
-					get: () => mediaType.subtype.toLowerCase(),
+					get: () => mediaType[$subtype].toLowerCase(),
 				},
 			],
 			[
-				'original',
+				$orignal,
 				{
 					get: () => mediaType,
 				},
@@ -91,5 +92,5 @@ const normaliseMediaType = (mediaType: TMediaType): TNormalisedMediaType => {
 	return normalised;
 };
 
-export type { TNormalisedMediaType, TMediaType };
+export type { TMediaType, TNormalisedMediaType };
 export default normaliseMediaType;

@@ -13,6 +13,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+import { $subtype, $type } from './constants.js';
 import normaliseMediaType from './normaliseMediaType.js';
 import parseAcceptHeader from './parseAcceptHeader.js';
 import parseMediaType, { type TMediaType } from './parseMediaType.js';
@@ -176,14 +177,14 @@ const negotiateMediaTypeFactory = (availableMediaTypes: string[]) => {
 						map.set(acceptableMediaType, availableMediaType);
 						return true;
 					} else if (
-						acceptableMediaType.subtype === '*' &&
-						acceptableMediaType.type === availableMediaType.type
+						acceptableMediaType[$subtype] === '*' &&
+						acceptableMediaType[$type] === availableMediaType[$type]
 					) {
 						map.set(acceptableMediaType, availableMediaType);
 						return true;
 					} else if (
-						acceptableMediaType.type === '*' &&
-						acceptableMediaType.subtype === '*'
+						acceptableMediaType[$type] === '*' &&
+						acceptableMediaType[$subtype] === '*'
 					) {
 						map.set(acceptableMediaType, availableMediaType);
 						return true;
@@ -209,13 +210,13 @@ const negotiateMediaTypeFactory = (availableMediaTypes: string[]) => {
 
 		// Now, find the type with the highest specificity
 		overlappingTypes.sort((a, b) => {
-			if (a.type === '*' && b.type !== '*') {
+			if (a[$type] === '*' && b[$type] !== '*') {
 				return 1;
-			} else if (a.type !== '*' && b.type === '*') {
+			} else if (a[$type] !== '*' && b[$type] === '*') {
 				return -1;
-			} else if (a.subtype === '*' && b.subtype !== '*') {
+			} else if (a[$subtype] === '*' && b[$subtype] !== '*') {
 				return 1;
-			} else if (a.subtype !== '*' && b.subtype === '*') {
+			} else if (a[$subtype] !== '*' && b[$subtype] === '*') {
 				return -1;
 			}
 

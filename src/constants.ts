@@ -25,3 +25,18 @@ export const TOKEN =
  * @see https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.3
  */
 export const OWS = ' \t' as const;
+
+/**
+ * @internal
+ */
+export const $type = 'type' as const;
+
+/**
+ * @internal
+ */
+export const $subtype = 'subtype' as const;
+
+/**
+ * @internal
+ */
+export const $orignal = 'original' as const;

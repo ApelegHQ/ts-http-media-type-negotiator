@@ -13,6 +13,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+import { $subtype, $type } from './constants.js';
 import { isOWS, isToken } from './utils.js';
 
 const STATE_INVALID = -1 as const;
@@ -43,8 +44,8 @@ type TState =
 	| typeof STATE_PARAMETER_QUOTED;
 
 type TMediaType = [mimeType: string, [parameter: string, value: string][]] & {
-	readonly type: string;
-	readonly subtype: string;
+	readonly [$type]: string;
+	readonly [$subtype]: string;
 };
 
 /**
@@ -260,13 +261,13 @@ const parseMediaType = (
 		result,
 		Object.fromEntries([
 			[
-				'type',
+				$type,
 				{
 					get: () => type,
 				},
 			],
 			[
-				'subtype',
+				$subtype,
 				{
 					get: () => subtype,
 				},
