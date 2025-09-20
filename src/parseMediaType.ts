@@ -48,6 +48,8 @@ type TMediaType = [mimeType: string, [parameter: string, value: string][]] & {
 	readonly [$subtype]: string;
 };
 
+class MediaTypeParsingError extends Error {}
+
 /**
  * Parse a Content-Type/media-type header value (RFC 9110 §8.3.1) into a
  * tuple-like structure.
@@ -70,12 +72,12 @@ type TMediaType = [mimeType: string, [parameter: string, value: string][]] & {
  * @param permissive - If true, accept some common non-RFC inputs (extra OWS,
  *   empty parameter values, flag parameters, truncated trailing quote when
  *   permissive and EOF).
- * @returns {TMediaType} Parsed media type tuple: `[ "type/subtype", params ]`
+ * @returns Parsed media type tuple: `[ "type/subtype", params ]`
  *   where params is an array of `[name, value]` pairs (name/value are raw
  *   strings; names are not lower-cased).
  *
- * @throws {Error} If the input is not a valid media type under strict parsing
- *   (permissive=false).
+ * @throws {MediaTypeParsingError} If the input is not a valid media type under
+ *   strict parsing (permissive=false).
  *
  * @example
  * parseMediaType('text/plain; charset=utf-8');
@@ -253,7 +255,7 @@ const parseMediaType = (
 		(!permissive && pos !== mediaType.length + 1) ||
 		(state !== STATE_SUBTYPE_END && state !== STATE_PARAMS_START)
 	) {
-		throw new Error('Invalid input');
+		throw new MediaTypeParsingError('Invalid input');
 	}
 
 	const result = [type + '/' + subtype, params] as TMediaType;
@@ -279,4 +281,5 @@ const parseMediaType = (
 };
 
 export type { TMediaType };
+export { MediaTypeParsingError };
 export default parseMediaType;

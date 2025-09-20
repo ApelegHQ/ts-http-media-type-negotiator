@@ -1,11 +1,13 @@
-** HTTP Media Type Negotiator **
+# HTTP Media Type Negotiator
 
  ![NPM Downloads](https://img.shields.io/npm/dw/@apeleghq/http-media-type-negotiator?style=flat-square)
 
 
 ---
-### 🚀 Features
+## 🚀 Features
 
+- No runtime dependencies.
+- Runtime and framework agnostic.
 - Negotiates HTTP media types (Accept header) against server-supported types
   following RFC 9110 §5.6.
 - Parses and normalises media types and Accept headers with optional permissive
@@ -20,7 +22,7 @@
   * Normalising said media types (`normaliseMediaType`)
   * Parsing `Accept` heades (`parseAcceptHeader`)
 
-### 💻 Installation
+## 💻 Installation
 
 Install from npm or yarn:
 
@@ -34,14 +36,14 @@ or
 yarn add @apeleghq/http-media-type-negotiator
 ```
 
-### 📚 Usage
+## 📚 Usage
 
-#### One-shot negotiation
+### One-shot negotiation
 
 Use the convenience function when you just need to negotiate once:
 
 ```javascript
-import negotiateMediaType from '@apeleghq/http-media-type-negotiator';
+import { negotiateMediaType } from '@apeleghq/http-media-type-negotiator';
 
 const available = [
   'text/plain; charset=utf-8',
@@ -52,13 +54,13 @@ const best = negotiateMediaType(available, 'text/*;q=0.9, application/json;q=0.8
 // best -> 'text/plain; charset=utf-8'
 ```
 
-#### Reusable negotiator (recommended for repeated calls)
+### Reusable negotiator (recommended for repeated calls)
 
 Create a negotiator once for a fixed set of server-supported media types to
 avoid reparsing:
 
 ```javascript
-import negotiateMediaTypeFactory from '@apeleghq/http-media-type-negotiator';
+import { negotiateMediaTypeFactory } from '@apeleghq/http-media-type-negotiator';
 
 const available = [
   'text/plain; charset=utf-8',
@@ -72,7 +74,7 @@ const best1 = negotiate('application/json');
 const best2 = negotiate('text/*;q=0.9, application/json;q=0.8');
 ```
 
-#### Permissive mode
+### Permissive mode
 
 Pass the optional permissive flag to tolerate non-RFC-compliant inputs
 (extra whitespace, empty parameter values, flag parameters like `;foo`, and
@@ -82,7 +84,7 @@ truncated quoted values at EOF):
 const best = negotiate(acceptHeader, true); // permissive parsing
 ```
 
-### ⚙️ Behaviour notes
+## ⚙️ Behaviour notes
 
 - Returned strings are the original server-provided strings from the
   `availableMediaTypes` array.
@@ -100,7 +102,7 @@ const best = negotiate(acceptHeader, true); // permissive parsing
 - Parameter values are _not_ normalised and evaluated as exact matches
   (meaning case-sensitively).
 
-### ✅ Recommended usage pattern
+## ✅ Recommended usage pattern
 
 - If negotiating repeatedly for the same server-supported types, use
   `negotiateMediaTypeFactory` once and reuse the returned function to avoid
@@ -108,13 +110,13 @@ const best = negotiate(acceptHeader, true); // permissive parsing
 - Normalise case if you need canonical string comparisons beyond what the
   negotiator provides.
 
-### 🤝 Contributing
+## 🤝 Contributing
 
 Contributions welcome. Please open issues or pull requests on the repository.
 Consider adding unit tests for edge cases and performance benchmarks if you
 change parsing behaviour.
 
-### 📜 License
+## 📜 License
 
 This project is released under the ISC license. See the `LICENSE` file
 for details.

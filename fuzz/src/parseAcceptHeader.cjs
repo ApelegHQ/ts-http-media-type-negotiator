@@ -12,17 +12,17 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+/* eslint-disable @typescript-eslint/no-require-imports */
+const { parseAcceptHeader } = require('../../dist/index.cjs');
 
-export * from './negotiateMediaType.js';
-export {
-	default as negotiateMediaType,
-	default,
-} from './negotiateMediaType.js';
-export * from './negotiateMediaTypeFactory.js';
-export { default as negotiateMediaTypeFactory } from './negotiateMediaTypeFactory.js';
-export * from './normaliseMediaType.js';
-export { default as normaliseMediaType } from './normaliseMediaType.js';
-export * from './parseAcceptHeader.js';
-export { default as parseAcceptHeader } from './parseAcceptHeader.js';
-export * from './parseMediaType.js';
-export { default as parseMediaType } from './parseMediaType.js';
+function fuzz(buf) {
+	if (buf.length < 1) return;
+
+	const accept = buf.subarray(1).toString();
+	const typesOnly = !!(buf[0] & 0b01);
+	const permissive = !!(buf[0] & 0b10);
+
+	parseAcceptHeader(accept, typesOnly, permissive);
+}
+
+module.exports = { fuzz };

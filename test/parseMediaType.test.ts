@@ -16,7 +16,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import contentTypeParser from '../src/parseMediaType.js';
+import contentTypeParser, {
+	MediaTypeParsingError,
+} from '../src/parseMediaType.js';
 
 describe('mimeTypeParser — contract and general behavior', () => {
 	it.skip('should be a function that returns a 2-tuple', () => {
@@ -25,7 +27,7 @@ describe('mimeTypeParser — contract and general behavior', () => {
 		// Use a simple valid value only to probe shape; implementations may throw on invalid input
 		assert.throws(
 			() => contentTypeParser(''),
-			/provided|Invalid|cannot/i,
+			MediaTypeParsingError,
 			'Implementation may reject empty string',
 		);
 	});
