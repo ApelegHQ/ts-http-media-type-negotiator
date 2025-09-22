@@ -12,18 +12,36 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-/* eslint-disable @typescript-eslint/no-require-imports */
-const { parseAcceptHeader, parseMediaType } = require('../../dist/index.cjs');
 
-function fuzz(buf) {
-	if (buf.length < 1) return;
+function fuzzFactory(require, pre, post) {
+	return function (buf) {
+		if (buf.length < 1) return;
 
-	const accept = buf.subarray(1).toString();
-	const typesOnly = !!(buf[0] & 0b01);
-	const permissive = !!(buf[0] & 0b10);
+		pre?.(buf);
 
-	const parsedTypes = parseAcceptHeader(accept, typesOnly, permissive);
-	parsedTypes.forEach((type) => parseMediaType(type, permissive));
+		// This line for coverage purposes (use all getters)
+		void { ...require('../../dist/index.cjs') };
+
+		const {
+			fuzz: negotiateMediaType,
+		} = require('./negotiateMediaType.cjs');
+		const { fuzz: parseAcceptHeader } = require('./parseAcceptHeader.cjs');
+		const { fuzz: parseMediaType } = require('./parseMediaType.cjs');
+
+		switch (buf[0] & 0b1100_0000) {
+			case 0b0000_0000:
+				negotiateMediaType(buf);
+				break;
+			case 0b0100_0000:
+				parseAcceptHeader(buf);
+				break;
+			case 0b1000_0000:
+				parseMediaType(buf);
+				break;
+		}
+
+		post?.(buf);
+	};
 }
 
-module.exports = { fuzz };
+module.exports = fuzzFactory;

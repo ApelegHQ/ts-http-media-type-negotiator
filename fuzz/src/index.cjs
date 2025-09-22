@@ -13,24 +13,115 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { fuzz: negotiateMediaType } = require('./negotiateMediaType.cjs');
-const { fuzz: parseAcceptHeader } = require('./parseAcceptHeader.cjs');
-const { fuzz: parseMediaType } = require('./parseMediaType.cjs');
 
-function fuzz(buf) {
-	if (buf.length < 1) return;
+const fuzzFactory = require('./fuzzFactory.cjs');
 
-	switch (buf[0] & 0b11000000) {
-		case 0b00000000:
-			negotiateMediaType(buf);
-			break;
-		case 0b01000000:
-			parseAcceptHeader(buf);
-			break;
-		case 0b10000000:
-			parseMediaType(buf);
-			break;
+const {
+	enableSet,
+	isSetEnabled,
+	enableStringIncludes,
+	isStringIncludesEnabled,
+	enableWeakMap,
+	isWeakMapEnabled,
+} = (() => {
+	const { Set, WeakMap } = globalThis;
+	const { includes: String_includes } = String.prototype;
+
+	let SetEnabled = true,
+		StringIncludesEnabled = true,
+		WeakMapEnabled = true;
+
+	const enableSet = (v) => {
+		SetEnabled = v;
+	};
+	const isSetEnabled = () => SetEnabled;
+	const enableStringIncludes = (v) => {
+		StringIncludesEnabled = v;
+	};
+	const isStringIncludesEnabled = () => StringIncludesEnabled;
+	const enableWeakMap = (v) => {
+		WeakMapEnabled = v;
+	};
+	const isWeakMapEnabled = () => WeakMapEnabled;
+
+	Object.defineProperties(globalThis, {
+		Set: {
+			get: () => {
+				return SetEnabled ? Set : undefined;
+			},
+		},
+		WeakMap: {
+			get: () => {
+				return WeakMapEnabled ? WeakMap : undefined;
+			},
+		},
+	});
+
+	Object.defineProperties(String.prototype, {
+		includes: {
+			get: () => {
+				return StringIncludesEnabled ? String_includes : undefined;
+			},
+		},
+	});
+
+	return {
+		enableSet,
+		isSetEnabled,
+		enableStringIncludes,
+		isStringIncludesEnabled,
+		enableWeakMap,
+		isWeakMapEnabled,
+	};
+})();
+
+function hotRequire(id) {
+	delete require.cache[require.resolve(id)];
+
+	const SetEnabled = isSetEnabled();
+	const WeakMapEnabled = isWeakMapEnabled();
+	const StringIncludesEnabled = isStringIncludesEnabled();
+
+	enableSet(true);
+	enableWeakMap(true);
+	enableStringIncludes(true);
+
+	try {
+		return require(id);
+	} finally {
+		enableSet(SetEnabled);
+		enableWeakMap(WeakMapEnabled);
+		enableStringIncludes(StringIncludesEnabled);
 	}
 }
+
+const fuzz = (() => {
+	const map = Object.create(null);
+
+	const getFeatureKey = () => {
+		return [isSetEnabled, isWeakMapEnabled, isStringIncludesEnabled]
+			.map((v) => +!!v())
+			.join('');
+	};
+
+	const require_ = (id) => {
+		const key = getFeatureKey();
+		if (!Object.hasOwn(map, key)) {
+			map[key] = Object.create(null);
+		}
+		const resolved = require.resolve(id);
+		if (!Object.hasOwn(map[key], resolved)) {
+			map[key][resolved] = hotRequire(resolved);
+		}
+
+		return map[key][resolved];
+	};
+
+	return fuzzFactory(require_, (buf) => {
+		enableSet(!(buf[0] & 0b0010_0000));
+		enableWeakMap(!(buf[0] & 0b0001_0000));
+		enableStringIncludes(!(buf[0] & 0b0000_1000));
+	});
+})();
 
 module.exports = { fuzz };

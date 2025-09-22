@@ -17,6 +17,7 @@ import { $subtype, $type } from './constants.js';
 import normaliseMediaType from './normaliseMediaType.js';
 import parseAcceptHeader from './parseAcceptHeader.js';
 import parseMediaType, { type TMediaType } from './parseMediaType.js';
+import { wm } from './utils.js';
 
 const QVALUE_REGEX = /^(?:(?:0(?:\.\d{1,3})?)|(?:1(?:\.0{1,3})?))$/;
 const DEFAULT_Q = 1000;
@@ -124,7 +125,7 @@ const negotiateMediaTypeFactory = (availableMediaTypes: string[]) => {
 		return () => null;
 	}
 
-	const mapToOriginal = new Map<TMediaType, string>();
+	const mapToOriginal = wm<TMediaType, string>();
 	const parsedAvailableTypes = availableMediaTypes.map((mediaType) => {
 		const value = normaliseMediaType(parseMediaType(mediaType));
 		mapToOriginal.set(value, mediaType);
@@ -136,7 +137,7 @@ const negotiateMediaTypeFactory = (availableMediaTypes: string[]) => {
 			return availableMediaTypes[0];
 		}
 
-		const qMap = new WeakMap<TMediaType, number>();
+		const qMap = wm<TMediaType, number>();
 
 		const parsedAcceptableTypes = parseAcceptHeader(
 			accept,
@@ -164,10 +165,7 @@ const negotiateMediaTypeFactory = (availableMediaTypes: string[]) => {
 				return qb - qa;
 			}) as TMediaType[];
 
-		const map = new WeakMap<
-			TMediaType,
-			(typeof parsedAvailableTypes)[number]
-		>();
+		const map = wm<TMediaType, (typeof parsedAvailableTypes)[number]>();
 
 		// First pass: remove media types that aren't possible
 		const overlappingTypes = parsedAcceptableTypes.filter(

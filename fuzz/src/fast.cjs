@@ -13,17 +13,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { parseAcceptHeader, parseMediaType } = require('../../dist/index.cjs');
 
-function fuzz(buf) {
-	if (buf.length < 1) return;
-
-	const accept = buf.subarray(1).toString();
-	const typesOnly = !!(buf[0] & 0b01);
-	const permissive = !!(buf[0] & 0b10);
-
-	const parsedTypes = parseAcceptHeader(accept, typesOnly, permissive);
-	parsedTypes.forEach((type) => parseMediaType(type, permissive));
-}
+const fuzzFactory = require('./fuzzFactory.cjs');
+const fuzz = fuzzFactory(require);
 
 module.exports = { fuzz };

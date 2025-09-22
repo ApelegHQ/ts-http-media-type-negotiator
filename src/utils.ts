@@ -43,7 +43,7 @@ const fastLookupFactory = (haystack: string) => {
 
 	return (c: string): boolean => {
 		if (!internal) {
-			if (typeof Set === 'function') {
+			if (import.meta.format === 'esm' || typeof Set === 'function') {
 				const set = new Set(haystack.split(''));
 				internal = (s) => set.has(s);
 			} else if (typeof String.prototype.includes === 'function') {
@@ -56,6 +56,123 @@ const fastLookupFactory = (haystack: string) => {
 		return internal(c);
 	};
 };
+
+type TOptional<T, TK extends keyof T> = Omit<T, TK> & Partial<Pick<T, TK>>;
+
+/**
+ * Creates a WeakMap-like factory that returns a native WeakMap when available,
+ * or a lightweight fallback implementation when WeakMap is not supported.
+ *
+ * This exported constant is an IIFE that detects the runtime environment:
+ * - If `WeakMap` is available, it constructs and returns a native `WeakMap`.
+ * - If `WeakMap` is not available, it returns an object that satisfies
+ *   the `WeakMap` interface (`get`, `set`, `has`, `delete`, and
+ *   `Symbol.toStringTag`) backed by an internal array of entries.
+ *
+ * The fallback does not provide the true garbage-collection semantics of a
+ * real `WeakMap`; it simply mimics the API for environments that lack
+ * `WeakMap` support.
+ *
+ * Type parameters:
+ * @template TK - Type of keys (constrained to `WeakKey` in the local types).
+ * @template TV - Type of values stored in the map.
+ *
+ * Parameters:
+ * @param entries - Optional iterable of key/value pairs to initialise the
+ *  returned map with. When provided, entries are copied into the underlying
+ *  storage.
+ *
+ * Returns:
+ * @returns A `WeakMap` instance (native when available) or a fallback object
+ *  that satisfies the `WeakMap<TK, TV>` interface.
+ *
+ * Notes:
+ * - The fallback implementation uses strict (===) reference equality for keys.
+ * - The fallback's `set` method returns the fallback object itself to match the
+ *   `WeakMap#set` fluent API.
+ * - Use this factory when you need a WeakMap-like API and want to tolerate
+ *   environments without native WeakMap support.
+ *
+ * @internal
+ */
+export const wm = (() => {
+	let internal: <TK extends WeakKey = object, TV = unknown>(
+		entries?: readonly (readonly [TK, TV])[] | null,
+	) => WeakMap<TK, TV>;
+
+	return <TK extends WeakKey, TV>(
+		entries?: readonly (readonly [TK, TV])[] | null,
+	): WeakMap<TK, TV> => {
+		if (!internal) {
+			if (import.meta.format === 'esm' || typeof WeakMap === 'function') {
+				internal = ((entries?: readonly (readonly [TK, TV])[] | null) =>
+					new WeakMap<TK, TV>(entries)) as unknown as typeof internal;
+			} else {
+				const findIndex = (
+					arr: readonly (readonly [TK, TV])[],
+					key: TK,
+				): number => {
+					for (let i = 0; i < arr.length; i++) {
+						if (arr[i][0] === key) return i;
+					}
+					return -1;
+				};
+
+				internal = ((
+					entries?: readonly (readonly [TK, TV])[] | null,
+				) => {
+					const storage = entries ? Array.from(entries) : [];
+					const obj: TOptional<
+						WeakMap<TK, TV>,
+						typeof Symbol.toStringTag
+					> = {
+						delete: (key: TK): boolean => {
+							const index = findIndex(storage, key);
+							if (index === -1) return false;
+
+							storage.splice(index, 1);
+							return true;
+						},
+						get: (key: TK): TV | undefined => {
+							const index = findIndex(storage, key);
+							if (index === -1) return undefined;
+
+							return storage[index][1];
+						},
+						has: (key: TK): boolean => {
+							const index = findIndex(storage, key);
+
+							return index !== -1;
+						},
+						set: (key: TK, value: TV): WeakMap<TK, TV> => {
+							const index = findIndex(storage, key);
+							if (index === -1) {
+								storage.push([key, value]);
+							} else {
+								storage.splice(index, 1, [key, value]);
+							}
+
+							return obj as WeakMap<TK, TV>;
+						},
+					};
+
+					if (
+						typeof Symbol === 'function' &&
+						typeof Symbol.toStringTag === 'symbol'
+					) {
+						Object.defineProperty(obj, Symbol.toStringTag, {
+							value: 'WeakMap',
+						});
+					}
+
+					return Object.create(obj);
+				}) as unknown as typeof internal;
+			}
+		}
+
+		return internal<TK, TV>(entries);
+	};
+})();
 
 /**
  * Predicate that tests whether a character is part of the `token` character set
