@@ -1,7 +1,7 @@
 {
 	"name": "@apeleghq/http-media-type-negotiator",
-	"version": "1.0.3",
-	"description": "RFC‑aware HTTP media type negotiator - parses and normalises Accept headers and media types (RFC 9110), supports q-value ranking, wildcard matching, and a permissive mode for real‑world headers.",
+	"version": "1.0.4",
+	"description": "RFC-aware HTTP media type negotiator - parses and normalises Accept headers and media types (RFC 9110), supports q-value ranking, wildcard matching, and a permissive mode for real-world headers.",
 	"type": "module",
 	"main": "dist/index.cjs",
 	"module": "dist/index.mjs",
@@ -55,6 +55,16 @@
 			"require": {
 				"types": "./dist/exports/parseMediaType.d.cts",
 				"default": "./dist/parseMediaType.cjs"
+			}
+		},
+		"./compat/Negotiator": {
+			"import": {
+				"types": "./dist/compat/Negotiator.d.mts",
+				"default": "./dist/compat/Negotiator.mjs"
+			},
+			"require": {
+				"types": "./dist/compat/Negotiator.d.cts",
+				"default": "./dist/compat/Negotiator.cjs"
 			}
 		}
 	},

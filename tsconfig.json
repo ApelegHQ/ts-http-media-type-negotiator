@@ -14,8 +14,9 @@
 		"resolveJsonModule": true,
 		"allowJs": true,
 		"checkJs": true,
+		"isolatedModules": true,
 		"lib": ["ES2019.object", "ES2019.array", "dom"],
-		"typeRoots": ["./node_modules/@types", "./@types"]
+		"typeRoots": ["./node_modules/@types", "./@types"],
 	},
 	"ts-node": {
 		"experimentalResolver": true

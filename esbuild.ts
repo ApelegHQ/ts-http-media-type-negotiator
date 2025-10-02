@@ -33,7 +33,7 @@ const buildOptionsBase: esbuild.BuildOptions = {
 	bundle: true,
 	minify: true,
 	entryNames: '[name]',
-	platform: 'node',
+	platform: 'neutral',
 	external: ['esbuild'],
 };
 
@@ -54,6 +54,35 @@ await Promise.all(
 		});
 	}),
 );
+
+await Promise.all([
+	esbuild.build({
+		...buildOptionsBase,
+		entryPoints: ['./src/compat/Negotiator.mts'],
+		outdir: 'dist/compat',
+		format: 'esm',
+		outExtension: {
+			'.js': '.mjs',
+		},
+		define: {
+			...buildOptionsBase.define,
+			'import.meta.format': JSON.stringify('esm'),
+		},
+	}),
+	esbuild.build({
+		...buildOptionsBase,
+		outdir: 'dist/compat',
+		entryPoints: ['./src/compat/Negotiator.cts'],
+		format: 'cjs',
+		outExtension: {
+			'.js': '.cjs',
+		},
+		define: {
+			...buildOptionsBase.define,
+			'import.meta.format': JSON.stringify('cjs'),
+		},
+	}),
+]);
 
 const cjsDeclarationFiles = async (directoryPath: string) => {
 	const entries = await readdir(directoryPath, {

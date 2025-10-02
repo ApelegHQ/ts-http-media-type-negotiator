@@ -84,6 +84,19 @@ truncated quoted values at EOF):
 const best = negotiate(acceptHeader, true); // permissive parsing
 ```
 
+### Compatibility with `negotiator`
+
+An API that emulates the [`negotiator`](https://github.com/jshttp/negotiator)
+package is available via the `@apeleghq/http-media-type-negotiator/compat/Negotiator`
+export.
+
+The `mediaType` and `mediaTypes` interfaces are exposed, although they don't
+behave identically to those in `negotiator`:
+
+  * `mediaTypes` will return at most a single media type if the
+    `availableMediaTypes` parameter is provided.
+  * The negotiation algorithm may produce different results.
+
 ## ⚙️ Behaviour notes
 
 - Returned strings are the original server-provided strings from the
