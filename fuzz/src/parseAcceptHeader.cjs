@@ -19,10 +19,11 @@ function fuzz(buf) {
 	if (buf.length < 1) return;
 
 	const accept = buf.subarray(1).toString();
-	const typesOnly = !!(buf[0] & 0b01);
-	const permissive = !!(buf[0] & 0b10);
+	const sort = !!(buf[0] & 0b001);
+	const typesOnly = !!(buf[0] & 0b010);
+	const permissive = !!(buf[0] & 0b100);
 
-	const parsedTypes = parseAcceptHeader(accept, typesOnly, permissive);
+	const parsedTypes = parseAcceptHeader(accept, sort, typesOnly, permissive);
 	parsedTypes.forEach((type) => parseMediaType(type, permissive));
 }
 

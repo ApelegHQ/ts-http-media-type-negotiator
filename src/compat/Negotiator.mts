@@ -72,7 +72,7 @@ Negotiator.prototype.mediaTypes = function (availableMediaTypes) {
 	const accept = this.request.headers.accept;
 
 	if (!availableMediaTypes) {
-		return accept ? parseAcceptHeader(accept, true) : [];
+		return parseAcceptHeader(accept, true, true, true);
 	}
 
 	const result = negotiateMediaType(availableMediaTypes, accept);

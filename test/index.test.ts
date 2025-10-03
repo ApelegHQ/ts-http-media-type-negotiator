@@ -13,6 +13,9 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../@types/importmeta.d.ts" />
+
 import './negotiateMediaType.test.js';
-import './parseAcceptHeader.test.js';
 import './parseMediaType.test.js';
+import './rawParseAcceptHeader.test.js';

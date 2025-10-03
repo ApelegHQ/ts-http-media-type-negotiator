@@ -13,18 +13,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-export * from './negotiateMediaType.js';
+export * from '../rawParseAcceptHeader.js';
 export {
 	default,
-	default as negotiateMediaType,
-} from './negotiateMediaType.js';
-export * from './negotiateMediaTypeFactory.js';
-export { default as negotiateMediaTypeFactory } from './negotiateMediaTypeFactory.js';
-export * from './normaliseMediaType.js';
-export { default as normaliseMediaType } from './normaliseMediaType.js';
-export * from './parseAcceptHeader.js';
-export { default as parseAcceptHeader } from './parseAcceptHeader.js';
-export * from './parseMediaType.js';
-export { default as parseMediaType } from './parseMediaType.js';
-export * from './rawParseAcceptHeader.js';
-export { default as rawParseAcceptHeader } from './rawParseAcceptHeader.js';
+	default as rawParseAcceptHeader,
+} from '../rawParseAcceptHeader.js';

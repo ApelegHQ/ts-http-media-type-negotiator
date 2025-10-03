@@ -15,3 +15,4 @@
 
 export * from '../parseAcceptHeader.js';
 export { default, default as parseAcceptHeader } from '../parseAcceptHeader.js';
+export * from './rawParseAcceptHeader.js';

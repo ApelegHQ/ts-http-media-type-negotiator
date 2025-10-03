@@ -18,6 +18,6 @@ export {
 	default,
 	default as negotiateMediaTypeFactory,
 } from '../negotiateMediaTypeFactory.js';
+export * from './rawParseAcceptHeader.js';
 export * from './normaliseMediaType.js';
-export * from './parseAcceptHeader.js';
 export * from './parseMediaType.js';

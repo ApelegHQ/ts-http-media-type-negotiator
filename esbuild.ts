@@ -27,6 +27,7 @@ const buildOptionsBase: esbuild.BuildOptions = {
 		'./src/exports/normaliseMediaType.ts',
 		'./src/exports/parseAcceptHeader.ts',
 		'./src/exports/parseMediaType.ts',
+		'./src/exports/rawParseAcceptHeader.ts',
 	],
 	target: 'es2018',
 	outdir: 'dist',
