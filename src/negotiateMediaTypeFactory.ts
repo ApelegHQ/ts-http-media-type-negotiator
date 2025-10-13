@@ -53,9 +53,9 @@ import { wm } from './utils.js';
  */
 interface IMediaTypeNegotiationStrategy {
 	(
-		parsedAvailableTypes: readonly TNormalisedMediaType[],
-		parsedAcceptableTypes: readonly TNormalisedMediaType[],
-		qMap: Readonly<WeakMap<TMediaType, number>>,
+		parsedAvailableTypes: readonly Readonly<TNormalisedMediaType>[],
+		parsedAcceptableTypes: readonly Readonly<TNormalisedMediaType>[],
+		qMap: Readonly<WeakMap<Readonly<TMediaType>, number>>,
 	): TNormalisedMediaType | null;
 }
 

@@ -14,28 +14,65 @@
  */
 
 import { $subtype, $type } from './constants.js';
+import findOverlappingParams from './lib/findOverlappingParams.js';
 import type { IMediaTypeNegotiationStrategy } from './negotiateMediaTypeFactory.js';
-import type { TMediaType } from './parseMediaType.js';
+import type { TNormalisedMediaType } from './normaliseMediaType.js';
 import { wm } from './utils.js';
 
 /**
- * Find parameters that overlap between two media types, excluding the `q`
- * parameter.
+ * Factory that produces a memoised function to compute the number of
+ * overlapping parameter names between two normalised media type tuples.
+ *
+ * The factory is generic over two tuple types representing normalised media
+ * types: each tuple is expected to be the same shape as `TNormalisedMediaType`.
+ *
+ * Notes:
+ * - This function uses reference equality for caching: the `acceptable` and
+ *   `available` arguments are used as keys by identity (===).
+ * - Fast path: if either media type has no parameters (second tuple element
+ *   has length 0) the function returns 0 immediately.
  *
  * @internal
- * @param a - Candidate media type (typically from `Accept` header).
- * @param b - Available media type (server-provided).
- * @returns Array of matching `[name, value]` parameter pairs.
+ * @template TA - readonly normalised media type for "acceptable"
+ * @template TB - readonly normalised media type for "available"
+ * @returns A memoised function that returns the number of overlapping
+ *   parameter names between `acceptable` and `available`.
  */
-const findOverlappingParams = (a: TMediaType, b: TMediaType) => {
-	return a[1].filter((aparam) => {
-		return (
-			aparam[0] !== 'q' &&
-			b[1].some((bparam) => {
-				return aparam[0] === bparam[0] && aparam[1] === bparam[1];
-			})
-		);
-	});
+const findOverlappingParamsCardinalityFactory = <
+	TA extends Readonly<TNormalisedMediaType>,
+	TB extends Readonly<TNormalisedMediaType>,
+>() => {
+	const cache: [acceptable: TA, [available: TB, cardinality: number][]][] =
+		[];
+
+	return (acceptable: TA, available: TB): number => {
+		// Fast path
+		if (acceptable[1].length === 0 || available[1].length === 0) {
+			return 0;
+		}
+
+		let subcache: (typeof cache)[number][1] | undefined;
+		for (let i = 0; i < cache.length; i++) {
+			if (cache[i][0] === acceptable) {
+				subcache = cache[i][1];
+				for (let j = 0; j < subcache.length; j++) {
+					if (subcache[j][0] === available) {
+						return subcache[j][1];
+					}
+				}
+			}
+		}
+
+		if (!subcache) {
+			subcache = [];
+			cache.push([acceptable, subcache]);
+		}
+
+		const cardinality = findOverlappingParams(acceptable, available).length;
+		subcache.push([available, cardinality]);
+
+		return cardinality;
+	};
 };
 
 /**
@@ -78,46 +115,52 @@ const findOverlappingParams = (a: TMediaType, b: TMediaType) => {
  *   `parsedAvailableTypes` array, or `null` if no suitable match is found.
  */
 const defaultStrategy = ((availableMediaTypes, acceptableMediaTypes, qMap) => {
-	const map = wm<
+	const acceptableToAvailableMap = wm<
 		(typeof acceptableMediaTypes)[number],
 		(typeof availableMediaTypes)[number]
 	>();
+	const findOverlappingParamsCardinality =
+		findOverlappingParamsCardinalityFactory();
 
 	// First pass: remove media types that aren't possible
 	const overlappingTypes = acceptableMediaTypes.filter(
 		(acceptableMediaType) => {
-			const possible: (typeof availableMediaTypes)[number][] = [];
+			const matchingAvailableLit: (typeof availableMediaTypes)[number][] =
+				[];
 			availableMediaTypes.forEach((availableMediaType) => {
 				if (acceptableMediaType[0] === availableMediaType[0]) {
-					possible.push(availableMediaType);
+					matchingAvailableLit.push(availableMediaType);
 				} else if (
 					acceptableMediaType[$subtype] === '*' &&
 					acceptableMediaType[$type] === availableMediaType[$type]
 				) {
-					possible.push(availableMediaType);
+					matchingAvailableLit.push(availableMediaType);
 				} else if (
 					acceptableMediaType[$type] === '*' &&
 					acceptableMediaType[$subtype] === '*'
 				) {
-					possible.push(availableMediaType);
+					matchingAvailableLit.push(availableMediaType);
 				}
 			});
 
-			possible.sort((a, b) => {
-				const overlappingA = findOverlappingParams(
+			matchingAvailableLit.sort((a, b) => {
+				const ca = findOverlappingParamsCardinality(
 					acceptableMediaType,
 					a,
-				).length;
-				const overlappingB = findOverlappingParams(
+				);
+				const cb = findOverlappingParamsCardinality(
 					acceptableMediaType,
 					b,
-				).length;
+				);
 
-				return overlappingB - overlappingA;
+				return cb - ca;
 			});
 
-			if (possible.length) {
-				map.set(acceptableMediaType, possible[0]);
+			if (matchingAvailableLit.length) {
+				acceptableToAvailableMap.set(
+					acceptableMediaType,
+					matchingAvailableLit[0],
+				);
 				return true;
 			}
 
@@ -151,13 +194,13 @@ const defaultStrategy = ((availableMediaTypes, acceptableMediaTypes, qMap) => {
 			return -1;
 		}
 
-		const availableA = map.get(a)!;
-		const availableB = map.get(b)!;
+		const availableA = acceptableToAvailableMap.get(a)!;
+		const availableB = acceptableToAvailableMap.get(b)!;
 
-		const overlappingA = findOverlappingParams(a, availableA).length;
-		const overlappingB = findOverlappingParams(b, availableB).length;
+		const ca = findOverlappingParamsCardinality(a, availableA);
+		const cb = findOverlappingParamsCardinality(a, availableB);
 
-		const result = overlappingB - overlappingA;
+		const result = cb - ca;
 		if (result !== 0) {
 			return result;
 		}
@@ -170,7 +213,7 @@ const defaultStrategy = ((availableMediaTypes, acceptableMediaTypes, qMap) => {
 	});
 
 	const highestRanked = overlappingTypes[0];
-	const availableType = map.get(highestRanked)!;
+	const availableType = acceptableToAvailableMap.get(highestRanked)!;
 
 	return availableType;
 }) satisfies IMediaTypeNegotiationStrategy;
