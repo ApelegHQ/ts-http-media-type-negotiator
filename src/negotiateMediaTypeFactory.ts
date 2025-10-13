@@ -13,32 +13,51 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import { $subtype, $type } from './constants.js';
+import defaultStrategy from './defaultStrategy.js';
 import findQ from './lib/findQ.js';
+import type { TNormalisedMediaType } from './normaliseMediaType.js';
 import normaliseMediaType from './normaliseMediaType.js';
-import rawParseAcceptHeader from './rawParseAcceptHeader.js';
 import parseMediaType, { type TMediaType } from './parseMediaType.js';
+import rawParseAcceptHeader from './rawParseAcceptHeader.js';
 import { wm } from './utils.js';
 
 /**
- * Find parameters that overlap between two media types, excluding the `q`
- * parameter.
+ * Defines the contract for a function that implements a content negotiation
+ * strategy.
  *
- * @internal
- * @param a - Candidate media type (typically from `Accept` header).
- * @param b - Available media type (server-provided).
- * @returns Array of matching `[name, value]` parameter pairs.
+ * A strategy function is responsible for selecting the single best media type
+ * from a list of available server types, based on a list of acceptable client
+ * types. It encapsulates the core ranking and selection logic.
+ *
+ * The factory function `negotiateMediaTypeFactory` handles the initial parsing
+ * of raw header strings and pre-sorts the acceptable types by their q-value.
+ * The strategy function receives this structured, pre-processed data and must
+ * implement the algorithm to find the single best match.
+ *
+ * This allows for custom negotiation logic beyond the default RFC 7231
+ * implementation, such as simpler matching rules or different tie-breaking
+ * behaviours.
+ *
+ * @param parsedAvailableTypes - A readonly array of pre-parsed and normalised
+ *   media types supported by the server, ordered by server preference (most
+ *   preferred first).
+ * @param parsedAcceptableTypes - A readonly array of pre-parsed media types
+ *   from the client's `Accept` header. This array is guaranteed to be
+ *   pre-sorted in descending order of q-value.
+ * @param qMap - A readonly map providing an efficient way to look up the
+ *   q-value (weight) for any given media type from the `parsedAcceptableTypes`
+ *   array.
+ * @returns The best-matching normalised media type from the
+ *   `parsedAvailableTypes` array, or `null` if no suitable match is found
+ *   according to the strategy's rules.
  */
-const findOverlappingParams = (a: TMediaType, b: TMediaType) => {
-	return a[1].filter((aparam) => {
-		return (
-			aparam[0] !== 'q' &&
-			b[1].some((bparam) => {
-				return aparam[0] === bparam[0] && aparam[1] === bparam[1];
-			})
-		);
-	});
-};
+interface IMediaTypeNegotiationStrategy {
+	(
+		parsedAvailableTypes: readonly TNormalisedMediaType[],
+		parsedAcceptableTypes: readonly TNormalisedMediaType[],
+		qMap: Readonly<WeakMap<TMediaType, number>>,
+	): TNormalisedMediaType | null;
+}
 
 /**
  * Create a media type negotiator for a fixed list of available media types.
@@ -71,6 +90,7 @@ const findOverlappingParams = (a: TMediaType, b: TMediaType) => {
  * @param availableMediaTypes - Array of server-supported media type header
  *   strings, from most preferred to least preferred.
  *   The original strings are preserved and returned on a match.
+ * @param strategy - Optional custom negotiation strategy.
  * @returns A function that, given an `Accept` header string and optional
  * `permissive` flag, returns the best matching available media type string, or
  * `null` if no match exists. If `accept` is falsy, the first available media
@@ -87,7 +107,10 @@ const findOverlappingParams = (a: TMediaType, b: TMediaType) => {
  *   'text/*;q=0.9, application/json;q=0.8'
  * ); // -> 'text/plain; charset=utf-8'
  */
-const negotiateMediaTypeFactory = (availableMediaTypes: string[]) => {
+const negotiateMediaTypeFactory = (
+	availableMediaTypes: string[],
+	strategy: IMediaTypeNegotiationStrategy = defaultStrategy,
+) => {
 	if (availableMediaTypes.length === 0) {
 		return () => null;
 	}
@@ -118,92 +141,26 @@ const negotiateMediaTypeFactory = (availableMediaTypes: string[]) => {
 			})
 			.filter(
 				Boolean as unknown as (
-					x: TMediaType | undefined,
-				) => x is TMediaType,
+					x: TNormalisedMediaType | undefined,
+				) => x is TNormalisedMediaType,
 			)
 			.sort((a, b) => {
 				const qa = qMap.get(a!)!;
 				const qb = qMap.get(b!)!;
 
 				return qb - qa;
-			}) as TMediaType[];
+			});
 
-		const map = wm<TMediaType, (typeof parsedAvailableTypes)[number]>();
-
-		// First pass: remove media types that aren't possible
-		const overlappingTypes = parsedAcceptableTypes.filter(
-			(acceptableMediaType) => {
-				return parsedAvailableTypes.some((availableMediaType) => {
-					if (acceptableMediaType[0] === availableMediaType[0]) {
-						map.set(acceptableMediaType, availableMediaType);
-						return true;
-					} else if (
-						acceptableMediaType[$subtype] === '*' &&
-						acceptableMediaType[$type] === availableMediaType[$type]
-					) {
-						map.set(acceptableMediaType, availableMediaType);
-						return true;
-					} else if (
-						acceptableMediaType[$type] === '*' &&
-						acceptableMediaType[$subtype] === '*'
-					) {
-						map.set(acceptableMediaType, availableMediaType);
-						return true;
-					}
-					return false;
-				});
-			},
+		const availableType = strategy(
+			parsedAvailableTypes,
+			parsedAcceptableTypes,
+			qMap,
 		);
+		const result = availableType ? mapToOriginal.get(availableType) : null;
 
-		if (overlappingTypes.length === 0) {
-			return null;
-		}
-
-		// Second pass: keep highest preference only
-		const highestQ = qMap.get(overlappingTypes[0])!;
-		for (let i = 1; i < overlappingTypes.length; i++) {
-			const q = qMap.get(overlappingTypes[i])!;
-			if (q !== highestQ) {
-				overlappingTypes.splice(i);
-				break;
-			}
-		}
-
-		// Now, find the type with the highest specificity
-		overlappingTypes.sort((a, b) => {
-			if (a[$type] === '*' && b[$type] !== '*') {
-				return 1;
-			} else if (a[$type] !== '*' && b[$type] === '*') {
-				return -1;
-			} else if (a[$subtype] === '*' && b[$subtype] !== '*') {
-				return 1;
-			} else if (a[$subtype] !== '*' && b[$subtype] === '*') {
-				return -1;
-			}
-
-			const availableA = map.get(a)!;
-			const availableB = map.get(b)!;
-
-			const overlappingA = findOverlappingParams(a, availableA).length;
-			const overlappingB = findOverlappingParams(b, availableB).length;
-
-			const result = overlappingB - overlappingA;
-			if (result !== 0) {
-				return result;
-			}
-
-			// If everything is equal, prefer server order
-			return (
-				parsedAvailableTypes.indexOf(availableA) -
-				parsedAvailableTypes.indexOf(availableB)
-			);
-		});
-
-		const highestRanked = overlappingTypes[0];
-		const availableType = map.get(highestRanked)!;
-
-		return mapToOriginal.get(availableType)!;
+		return result || null;
 	};
 };
 
 export default negotiateMediaTypeFactory;
+export type { IMediaTypeNegotiationStrategy };

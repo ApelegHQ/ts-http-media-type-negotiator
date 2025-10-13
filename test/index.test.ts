@@ -16,6 +16,7 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../@types/importmeta.d.ts" />
 
+import './defaultStrategy.test.js';
 import './negotiateMediaType.test.js';
 import './parseMediaType.test.js';
 import './rawParseAcceptHeader.test.js';
